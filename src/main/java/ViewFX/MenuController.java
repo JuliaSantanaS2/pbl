@@ -1,5 +1,6 @@
 package ViewFX;
 
+import Control.WorkManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -18,6 +19,20 @@ public class MenuController {
     // A conexão com o BorderPane principal do seu Menu.fxml
     @FXML
     private BorderPane mainContainer;
+
+    private WorkManager workManager;
+
+    // Construtor principal para injeção de dependência do WorkManager
+    public MenuController(WorkManager workManager) {
+        this.workManager = workManager;
+    }
+
+    // Método initialize para carregar a tela padrão
+    @FXML
+    public void initialize() {
+        // Carrega a tela de busca e listagem como a tela inicial padrão
+        loadView("SearchAndListMediaView.fxml");
+    }
 
     /**
      * Método chamado pelo botão "New Media".
@@ -65,23 +80,41 @@ public class MenuController {
      */
     private void loadView(String fxmlFileName) {
         try {
-            // Constrói o caminho completo a partir da raiz da pasta 'resources'
             String path = "/" + fxmlFileName;
             URL resourceUrl = getClass().getResource(path);
 
-            // Verifica se o arquivo foi realmente encontrado antes de tentar carregar
             if (resourceUrl == null) {
                 System.err.println("ERRO: Arquivo FXML não encontrado no caminho: " + path);
                 showAlert("Erro Crítico", "O arquivo de interface '" + fxmlFileName + "' não foi encontrado.");
                 return;
             }
 
-            // Carrega o FXML e o coloca no centro da tela
-            Parent view = FXMLLoader.load(resourceUrl);
+            FXMLLoader loader = new FXMLLoader(resourceUrl);
+            Parent view = loader.load();
+
+            // Obtém o controlador da tela carregada
+            Object controller = loader.getController();
+
+            // Verifica o tipo do controlador e injeta o WorkManager
+            // e chama o método setupData() em cada um deles
+            if (controller instanceof NewMediaViewController) {
+                ((NewMediaViewController) controller).setWorkManager(this.workManager);
+                ((NewMediaViewController) controller).setupData(); // Chama setupData()
+            } else if (controller instanceof NewReviewViewController) {
+                ((NewReviewViewController) controller).setWorkManager(this.workManager);
+                ((NewReviewViewController) controller).setupData(); // Chama setupData()
+            } else if (controller instanceof SearchAndListMediaController) {
+                ((SearchAndListMediaController) controller).setWorkManager(this.workManager);
+                ((SearchAndListMediaController) controller).setupData(); // Chama setupData()
+            } else if (controller instanceof GenreController) {
+                ((GenreController) controller).setWorkManager(this.workManager);
+                ((GenreController) controller).setupData(); // Chama setupData()
+            }
+            // Adicione mais blocos 'else if' se você tiver outros controladores de tela
+
             mainContainer.setCenter(view);
 
         } catch (IOException e) {
-            // Pega outros erros que podem acontecer durante o carregamento (ex: erro de sintaxe no FXML)
             System.err.println("Falha ao carregar a view: " + fxmlFileName);
             e.printStackTrace();
             showAlert("Erro ao Carregar", "Ocorreu um erro ao processar a tela. Verifique o console para detalhes.");

@@ -6,6 +6,7 @@ import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import net.synedra.validatorfx.ValidationMessage;
 import net.synedra.validatorfx.Validator;
 import org.controlsfx.control.CheckComboBox;
 import javafx.scene.control.DatePicker;
@@ -17,20 +18,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Controller unificado para a tela "New Media".
- * Gerencia os formulários de Livro e Filme, a validação de dados
- * e a lógica para salvar as novas mídias.
+ * Unified Controller for the "New Media" screen.
+ * Manages Book, Movie, Show, and Season forms, data validation,
+ * and logic for saving new media entries.
  */
 public class NewMediaViewController {
 
-    // --- Instâncias de Controle ---
+    // --- Control Instances ---
     private WorkManager workManager;
     private Validator bookValidator = new Validator();
     private Validator movieValidator = new Validator();
     private Validator showValidator = new Validator();
     private Validator seasonValidator = new Validator();
 
-    // --- Componentes Comuns e de Troca de Tela ---
+    // --- Common Components and Screen Switching ---
     @FXML private ToggleGroup mediaTypeToggleGroup;
     @FXML private VBox bookFormPane;
     @FXML private VBox movieFormPane;
@@ -38,7 +39,7 @@ public class NewMediaViewController {
     @FXML private VBox seasonFormPane;
 
 
-    // --- Componentes do Formulário de LIVRO ---
+    // --- Book Form Components ---
     @FXML private TextField bookTitleField;
     @FXML private TextField bookOriginalTitleField;
     @FXML private TextField bookAuthorField;
@@ -49,7 +50,7 @@ public class NewMediaViewController {
     @FXML private CheckBox bookSeenCheckBox;
     @FXML private CheckBox bookPhysicalCopyCheckBox;
 
-    // --- Componentes do Formulário de FILME ---
+    // --- Film Form Components ---
     @FXML private TextField movieTitleField;
     @FXML private TextField movieOriginalTitleField;
     @FXML private TextField movieDirectionField;
@@ -63,7 +64,7 @@ public class NewMediaViewController {
     @FXML private CheckComboBox<String> movieGenreCheckComboBox;
     @FXML private CheckBox movieSeenCheckBox;
 
-    // --- Componentes do Formulário de SHOW ---
+    // --- Show Form Components ---
     @FXML private TextField showTitleField;
     @FXML private TextField showOriginalTitleField;
     @FXML private TextField showCastInputField;
@@ -75,26 +76,27 @@ public class NewMediaViewController {
     @FXML private CheckBox showSeenCheckBox;
     @FXML private TextField showYearEndField;
 
-    // --- Componentes do Formulário de TEMPORADA ---
+    // --- Season Form Components ---
     @FXML private TextField seasonSeasonNumberTitleField;
     @FXML private TextField seasonEpisodeCountTitleField;
     @FXML private DatePicker seasonReleaseDatePicker;
     @FXML private ComboBox<String> seasonShowComboBox;
 
+    // Setter for WorkManager - called by MenuController
+    public void setWorkManager(WorkManager workManager) {
+        this.workManager = workManager;
+        setupData();
+    }
 
-
-    // Construtor vazio obrigatório para o FXMLLoader
+    // Empty constructor required by FXMLLoader
     public NewMediaViewController() {}
 
     /**
-     * Método executado automaticamente quando o FXML é carregado.
-     * É o ponto de partida para configurar a tela.
+     * Method executed automatically when the FXML is loaded.
+     * It's the starting point for setting up the UI components that don't depend on WorkManager.
      */
     @FXML
     public void initialize() {
-        this.workManager = new WorkManager();
-        populateGenreCheckComboBoxes();
-        populateShowCheckComboBoxesForSeason();
         setupFormSwitching();
         setupBookValidation();
         setupMovieValidation();
@@ -103,14 +105,26 @@ public class NewMediaViewController {
     }
 
     /**
-     * Adiciona um listener ao grupo de botões (Book, Movie) para
-     * mostrar/esconder o formulário correto.
+     * New method to set up data-dependent components, called after workManager is injected.
+     */
+    public void setupData() {
+        if (workManager != null) {
+            populateGenreCheckComboBoxes();
+            populateShowCheckComboBoxesForSeason();
+        } else {
+            System.err.println("WorkManager is null. Cannot populate combo boxes for New Media.");
+            showAlert("Error", "System not initialized correctly. Please restart.");
+        }
+    }
+
+    /**
+     * Adds a listener to the button group (Book, Movie) to
+     * show/hide the correct form.
      */
     private void setupFormSwitching() {
         mediaTypeToggleGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            // Garante que a troca só aconteça se um novo botão for selecionado
             if (newToggle == null && oldToggle != null) {
-                oldToggle.setSelected(true); // Impede que nenhum botão fique selecionado
+                oldToggle.setSelected(true);
                 return;
             }
 
@@ -135,77 +149,125 @@ public class NewMediaViewController {
     }
 
     /**
-     * Configura as regras de validação para o formulário de Livro.
+     * Configures validation rules for the Book form.
      */
     private void setupBookValidation() {
-        bookValidator.createCheck().dependsOn("text", bookTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Título é obrigatório."); }).decorates(bookTitleField);
-        bookValidator.createCheck().dependsOn("text", bookAuthorField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Autor é obrigatório."); }).decorates(bookAuthorField);
-        bookValidator.createCheck().dependsOn("text", bookReleaseYearField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Ano deve ter 4 números."); }).decorates(bookReleaseYearField);
-        bookValidator.createCheck().dependsOn("size", Bindings.size(bookGenreCheckComboBox.getCheckModel().getCheckedItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Selecione um gênero."); }).decorates(bookGenreCheckComboBox);
+        bookValidator.createCheck().dependsOn("text", bookTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Title is required."); });
+        bookValidator.createCheck().dependsOn("text", bookOriginalTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Original Title is required."); });
+        bookValidator.createCheck().dependsOn("text", bookAuthorField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Author is required."); });
+        bookValidator.createCheck().dependsOn("text", bookPublisherField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Publisher is required."); });
+
+        // NOVO: Validação de ISBN para 13 dígitos numéricos
+        bookValidator.createCheck().dependsOn("text", bookIsbnField.textProperty())
+                .withMethod(c -> {
+                    String isbn = (String) c.get("text");
+                    if (isbn.trim().isEmpty()) {
+                        c.error("ISBN is required.");
+                    } else if (!isbn.matches("\\d{13}")) { // Verifica exatamente 13 dígitos numéricos
+                        c.error("ISBN must be 13 digits long and contain only numbers.");
+                    }
+                });
+
+        bookValidator.createCheck().dependsOn("text", bookReleaseYearField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Year must have 4 digits."); });
+        bookValidator.createCheck().dependsOn("size", Bindings.size(bookGenreCheckComboBox.getCheckModel().getCheckedItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Please select a genre."); });
     }
 
     /**
-     * Configura as regras de validação para o formulário de Filme.
+     * Configures validation rules for the Film form.
      */
     private void setupMovieValidation() {
-        movieValidator.createCheck().dependsOn("text", movieTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Título é obrigatório."); }).decorates(movieTitleField);
-        movieValidator.createCheck().dependsOn("text", movieReleaseYearField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Ano deve ter 4 números."); }).decorates(movieReleaseYearField);
-        movieValidator.createCheck().dependsOn("size", Bindings.size(movieCastListView.getItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Adicione pelo menos um ator."); }).decorates(movieCastListView);
-        movieValidator.createCheck().dependsOn("size", Bindings.size(movieGenreCheckComboBox.getCheckModel().getCheckedItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Selecione um gênero."); }).decorates(movieGenreCheckComboBox);
+        movieValidator.createCheck().dependsOn("text", movieTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Title is required."); });
+        movieValidator.createCheck().dependsOn("text", movieOriginalTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Original Title is required."); });
+        movieValidator.createCheck().dependsOn("text", movieDirectionField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Direction is required."); });
+        movieValidator.createCheck().dependsOn("text", movieScreenplayField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Screenplay is required."); });
+        movieValidator.createCheck().dependsOn("size", Bindings.size(movieCastListView.getItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Add at least one cast member."); });
+
+        // NOVO: Validação para 'Where to Watch' (Platform)
+        movieValidator.createCheck().dependsOn("size", Bindings.size(moviePlatformListView.getItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Add at least one platform."); });
+
+        movieValidator.createCheck().dependsOn("text", movieReleaseYearField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Year must have 4 digits."); });
+        movieValidator.createCheck().dependsOn("size", Bindings.size(movieGenreCheckComboBox.getCheckModel().getCheckedItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Please select a genre."); });
     }
 
     private void setupShowValidation() {
-        showValidator.createCheck().dependsOn("text", showTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Título é obrigatório."); }).decorates(showTitleField);
-        showValidator.createCheck().dependsOn("text", showReleaseYearField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Ano deve ter 4 números."); }).decorates(showReleaseYearField);
-        showValidator.createCheck().dependsOn("text", showYearEndField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Ano deve ter 4 números."); }).decorates(showYearEndField);
-        showValidator.createCheck().dependsOn("size", Bindings.size(showCastListView.getItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Adicione pelo menos um ator."); }).decorates(showCastListView);
-        showValidator.createCheck().dependsOn("size", Bindings.size(showGenreCheckComboBox.getCheckModel().getCheckedItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Selecione um gênero."); }).decorates(showGenreCheckComboBox);
+        showValidator.createCheck().dependsOn("text", showTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Title is required."); });
+        showValidator.createCheck().dependsOn("text", showOriginalTitleField.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("Original Title is required."); });
+        showValidator.createCheck().dependsOn("text", showReleaseYearField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d{4}")) c.error("Year must have 4 digits."); });
+        showValidator.createCheck().dependsOn("text", showYearEndField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d+")) c.error("Year must be a number."); });
+        showValidator.createCheck().dependsOn("size", Bindings.size(showCastListView.getItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Add at least one cast member."); });
+
+        // NOVO: Validação para 'Where to Watch' (Platform)
+        showValidator.createCheck().dependsOn("size", Bindings.size(showPlatformListView.getItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Add at least one platform."); });
+
+        showValidator.createCheck().dependsOn("size", Bindings.size(showGenreCheckComboBox.getCheckModel().getCheckedItems())).withMethod(c -> { if (c.get("size").equals(0)) c.error("Please select a genre."); });
     }
 
+
     private void setupSeasonValidation() {
-        seasonValidator.createCheck().dependsOn("text", seasonSeasonNumberTitleField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d+")) c.error("Temporada deve ter numero"); }).decorates(seasonSeasonNumberTitleField);
-        seasonValidator.createCheck().dependsOn("text", seasonEpisodeCountTitleField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d+")) c.error("Tem que ser numeros."); }).decorates(seasonEpisodeCountTitleField);
+        seasonValidator.createCheck().dependsOn("value", seasonShowComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Please select a show."); });
+        seasonValidator.createCheck().dependsOn("text", seasonSeasonNumberTitleField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d+")) c.error("Season must be a number."); });
+        seasonValidator.createCheck().dependsOn("text", seasonEpisodeCountTitleField.textProperty()).withMethod(c -> { if (!((String) c.get("text")).matches("\\d+")) c.error("Must be a number."); });
+
+        // Validação de DatePicker: já garante que uma data válida (LocalDate) foi selecionada.
+        // O formato DD/MM/YYYY é aplicado na conversão para String em saveSeason().
+        seasonValidator.createCheck().dependsOn("value", seasonReleaseDatePicker.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Please select a release date."); });
     }
 
     /**
-     * Popula ambas as caixas de seleção de gênero com os dados do WorkManager.
+     * Populates both genre selection combo boxes with data from WorkManager.
      */
     private void populateGenreCheckComboBoxes() {
-        List<String> genreNames = workManager.getGenres().stream().map(Genre::getGenre).collect(Collectors.toList());
-        bookGenreCheckComboBox.getItems().setAll(genreNames);
-        movieGenreCheckComboBox.getItems().setAll(genreNames);
-        showGenreCheckComboBox.getItems().setAll(genreNames);
+        if (workManager != null) {
+            List<String> genreNames = workManager.getGenres().stream().map(Genre::getGenre).collect(Collectors.toList());
+            bookGenreCheckComboBox.getItems().setAll(genreNames);
+            movieGenreCheckComboBox.getItems().setAll(genreNames);
+            showGenreCheckComboBox.getItems().setAll(genreNames);
+        } else {
+            System.err.println("WorkManager is null in populateGenreCheckComboBoxes. Cannot populate genres.");
+            showAlert("Error", "System not initialized correctly. Please restart.");
+        }
     }
 
     private void populateShowCheckComboBoxesForSeason() {
-        List<String> showNames = workManager.getShowName();
-        seasonShowComboBox.getItems().setAll(showNames);
+        if (workManager != null) {
+            List<String> showNames = workManager.getShowName();
+            seasonShowComboBox.getItems().setAll(showNames);
+        } else {
+            System.err.println("WorkManager is null in populateShowCheckComboBoxesForSeason. Cannot populate shows.");
+            showAlert("Error", "System not initialized correctly. Please restart.");
+        }
     }
 
     /**
-     * Método único chamado pelo botão "Salvar Mídia".
-     * Ele decide qual validador usar e qual método de salvamento chamar.
+     * Single method called by the "Save Media" button.
+     * It decides which validator to use and which saving method to call.
      */
     @FXML
     void saveMedia() {
         ToggleButton selectedButton = (ToggleButton) mediaTypeToggleGroup.getSelectedToggle();
         String selectedType = selectedButton.getText();
         boolean isFormValid = false;
+        Validator currentValidator = null;
 
         switch (selectedType) {
             case "Book":
-                isFormValid = bookValidator.validate();
+                currentValidator = bookValidator;
                 break;
             case "Movie":
-                isFormValid = movieValidator.validate();
+                currentValidator = movieValidator;
                 break;
             case "Show":
-                isFormValid = showValidator.validate();
+                currentValidator = showValidator;
                 break;
             case "Season":
-                isFormValid = seasonValidator.validate();
+                currentValidator = seasonValidator;
                 break;
         }
+
+        if (currentValidator != null) {
+            isFormValid = currentValidator.validate();
+        }
+
 
         if (isFormValid) {
             switch (selectedType) {
@@ -223,12 +285,16 @@ public class NewMediaViewController {
                     break;
             }
         } else {
-            // Se QUALQUER validação falhar, mostra UM ÚNICO alerta genérico
-            showAlert("Erro de Validação", "Por favor, corrija os campos marcados em vermelho.");
+            // Coleta todas as mensagens de erro e exibe em um único alerta
+            String errorMessages = currentValidator.getValidationResult().getMessages().stream()
+                    .map(ValidationMessage::getText)
+                    .collect(Collectors.joining("\n- ", "- ", ""));
+
+            showAlert("Validation Error", "Please correct the following issues:\n" + errorMessages);
         }
     }
 
-    // --- Métodos de Lógica Específicos para Salvar ---
+    // --- Specific Saving Logic Methods ---
 
     private void saveBook() {
         try {
@@ -245,10 +311,10 @@ public class NewMediaViewController {
                     bookIsbnField.getText(),
                     bookPhysicalCopyCheckBox.isSelected()
             );
-            showAlert("Sucesso", "Livro '" + bookTitleField.getText() + "' salvo com sucesso!");
+            showAlert("Success", "Book '" + bookTitleField.getText() + "' saved successfully!");
             clearAllForms();
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar o livro: " + e.getMessage());
+            showAlert("Error", "An error occurred while saving the book: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -260,7 +326,6 @@ public class NewMediaViewController {
             List<String> selectedGenreNames = movieGenreCheckComboBox.getCheckModel().getCheckedItems();
             List<Genre> genresToSave = workManager.getGenres().stream().filter(g -> selectedGenreNames.contains(g.getGenre())).collect(Collectors.toList());
 
-            // Lembre-se: workManager.createFilm precisa aceitar List<String> para cast e platforms
             workManager.createFilm(
                     castToSave,
                     movieSeenCheckBox.isSelected(),
@@ -273,10 +338,10 @@ public class NewMediaViewController {
                     Integer.parseInt(movieRunningtimeField.getText()),
                     movieScreenplayField.getText()
             );
-            showAlert("Sucesso", "Filme '" + movieTitleField.getText() + "' salvo com sucesso!");
+            showAlert("Success", "Film '" + movieTitleField.getText() + "' saved successfully!");
             clearAllForms();
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar o filme: " + e.getMessage());
+            showAlert("Error", "An error occurred while saving the film: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -298,11 +363,11 @@ public class NewMediaViewController {
                     showPlatformsToSave,
                     Integer.parseInt(showYearEndField.getText())
             );
-            showAlert("Sucesso", "Show '" + showTitleField.getText() + "' salvo com sucesso!");
+            showAlert("Success", "Show '" + showTitleField.getText() + "' saved successfully!");
             populateShowCheckComboBoxesForSeason();
             clearAllForms();
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar o show: " + e.getMessage());
+            showAlert("Error", "An error occurred while saving the show: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -313,56 +378,66 @@ public class NewMediaViewController {
             LocalDate dataSelecionada = seasonReleaseDatePicker.getValue();
 
             if (dataSelecionada == null) {
-                showAlert("Erro", "Por favor, selecione uma data de lançamento.");
-                return; // Para a execução se a data estiver vazia
+                showAlert("Error", "Please select a release date.");
+                return;
             }
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
             String dataFormatada = dataSelecionada.format(formatter);
 
-            workManager.createSeason(
+            int result = workManager.createSeason(
                     selectedShowName,
                     Integer.parseInt(seasonSeasonNumberTitleField.getText()),
                     Integer.parseInt(seasonEpisodeCountTitleField.getText()),
                     dataFormatada
             );
-            showAlert("Sucesso", "Temporada salva com sucesso!");
-            clearAllForms();
+
+            if (result == 0) {
+                showAlert("Success", "Season saved successfully!");
+                populateShowCheckComboBoxesForSeason();
+                clearAllForms();
+            } else if (result == 1) {
+                showAlert("Error", "Show '" + selectedShowName + "' not found. Please check the title.");
+            } else if (result == 4) {
+                showAlert("Error", "Season " + seasonSeasonNumberTitleField.getText() + " already exists for show '" + selectedShowName + "'.");
+            } else if (result == 98) {
+                showAlert("Error", "Invalid season data. Check season number, episode count, or release date.");
+            } else {
+                showAlert("Error", "An unexpected error occurred while saving the season. Code: " + result);
+            }
+
+        } catch (NumberFormatException e) {
+            showAlert("Input Error", "Please enter valid numbers for season number and episode count.");
+            e.printStackTrace();
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar a temporada: " + e.getMessage());
+            showAlert("Internal Error", "An unexpected error occurred while saving the season: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-
-
-    // --- Métodos Auxiliares e de Ação para Listas ---
+    // --- Auxiliary and Action Methods for Lists ---
 
     private void clearAllForms() {
-        // Limpa campos de Livro
         bookTitleField.clear(); bookOriginalTitleField.clear(); bookAuthorField.clear();
         bookPublisherField.clear(); bookIsbnField.clear(); bookReleaseYearField.clear();
         bookSeenCheckBox.setSelected(false); bookPhysicalCopyCheckBox.setSelected(false);
         bookGenreCheckComboBox.getCheckModel().clearChecks();
 
-        // Limpa campos de Filme
         movieTitleField.clear(); movieOriginalTitleField.clear(); movieDirectionField.clear();
         movieScreenplayField.clear(); movieReleaseYearField.clear(); movieRunningtimeField.clear();
         movieSeenCheckBox.setSelected(false); movieGenreCheckComboBox.getCheckModel().clearChecks();
         movieCastInputField.clear(); movieCastListView.getItems().clear();
         moviePlatformInputField.clear(); moviePlatformListView.getItems().clear();
 
-        // Limpa campos de Show
         showTitleField.clear(); showOriginalTitleField.clear(); showReleaseYearField.clear();
         showYearEndField.clear(); showSeenCheckBox.setSelected(false);
         showGenreCheckComboBox.getCheckModel().clearChecks();
         showCastInputField.clear(); showCastListView.getItems().clear();
         showPlatformInputField.clear(); showPlatformListView.getItems().clear();
 
-
-        // Limpa campos de Temporada
         seasonSeasonNumberTitleField.clear(); seasonEpisodeCountTitleField.clear();
-        //dataFormatada.clear(); seasonShowComboBox.getSelectionModel().clearSelection();
+        seasonReleaseDatePicker.setValue(null);
+        seasonShowComboBox.getSelectionModel().clearSelection();
     }
 
     @FXML private void movieAddCastMember() { String name = movieCastInputField.getText().trim(); if (!name.isEmpty()) { movieCastListView.getItems().add(name); movieCastInputField.clear(); } }

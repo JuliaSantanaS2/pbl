@@ -16,8 +16,8 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.TextArea?>
-
 <?import javafx.scene.control.Slider?>
+
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ViewFX.NewReviewViewController"
       spacing="15.0" style="-fx-padding: 20px;">
 
@@ -40,11 +40,11 @@
 
                 <VBox fx:id="bookFormPane" spacing="10.0" visible="true">
                     <Label text="Book" />
-                    <ComboBox fx:id="bookNamesComboBox" promptText="Selecione uma série..." />
+                    <ComboBox fx:id="bookNamesComboBox" promptText="Select a book..." />
 
                     <VBox spacing="5.0">
                         <children>
-                            <Label text="Sua Review"/>
+                            <Label text="Your Review"/>
                             <TextArea fx:id="reviewBookTextArea"
                                       promptText="Write your review here..."
                                       wrapText="true"
@@ -56,7 +56,7 @@
                         <children>
                             <Label text="Rating (1-5):" />
                             <Slider fx:id="bookRatingSlider"
-                                    min="0"
+                                    min="1"
                                     max="5"
                                     value="3"
                                     majorTickUnit="1"
@@ -75,11 +75,11 @@
                     <children>
 
                         <Label text="Movie" />
-                        <ComboBox fx:id="movieNamesComboBox" promptText="Selecione uma série..." />
+                        <ComboBox fx:id="movieNamesComboBox" promptText="Select a movie..." />
 
                         <VBox spacing="5.0">
                             <children>
-                                <Label text="Sua Review"/>
+                                <Label text="Your Review"/>
                                 <TextArea fx:id="reviewMovieTextArea"
                                           promptText="Write your review here..."
                                           wrapText="true"
@@ -90,7 +90,7 @@
                             <children>
                                 <Label text="Rating (1-5):" />
                                 <Slider fx:id="movieRatingSlider"
-                                        min="0"
+                                        min="1"
                                         max="5"
                                         value="3"
                                         majorTickUnit="1"
@@ -111,12 +111,16 @@
                     <children>
 
                         <Label text="Show/Season" />
-                        <ComboBox fx:id="showNamesComboBox" promptText="Selecione uma série..." />
-                        <ComboBox fx:id="seasonNamesComboBox" promptText="Selecione uma tempo..." />
+                        <ComboBox fx:id="showNamesComboBox" promptText="Select a show..." />
+                        <ComboBox fx:id="seasonNamesComboBox" promptText="Select a season..." />
+
+                        <Label text="Please note: Reviews for shows are submitted per season. Ensure the desired show has registered seasons before attempting to submit a review."
+                               wrapText="true"
+                               style="-fx-font-size: 11px; -fx-text-fill: #6c757d; -fx-padding: 0 0 5px 0;" />
 
                         <VBox spacing="5.0">
                             <children>
-                                <Label text="Sua Review"/>
+                                <Label text="Your Review"/>
                                 <TextArea fx:id="reviewShowTextArea"
                                           promptText="Write your review here..."
                                           wrapText="true"
@@ -129,7 +133,7 @@
                             <children>
                                 <Label text="Rating (1-5):" />
                                 <Slider fx:id="showRatingSlider"
-                                        min="0"
+                                        min="1"
                                         max="5"
                                         value="3"
                                         majorTickUnit="1"
@@ -152,7 +156,7 @@
 
         <HBox alignment="CENTER_RIGHT">
             <children>
-                <Button text="Salvar Mídia" onAction="#saveReview" prefHeight="30.0" prefWidth="120.0" style="-fx-font-weight: bold;"/>
+                <Button text="Save Review" onAction="#saveReview" prefHeight="30.0" prefWidth="120.0" style="-fx-font-weight: bold;"/>
             </children>
         </HBox>
 

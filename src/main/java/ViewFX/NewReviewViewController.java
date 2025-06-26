@@ -4,47 +4,48 @@ import Control.WorkManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import net.synedra.validatorfx.ValidationMessage; // Importar ValidationMessage
 import net.synedra.validatorfx.Validator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javafx.scene.control.Label;
+import java.util.stream.Collectors; // Importar Collectors
 
 /**
- * Controller unificado para a tela "New Media".
- * Gerencia os formulários de Livro e Filme, a validação de dados
- * e a lógica para salvar as novas mídias.
+ * Unified Controller for the "New Review" screen.
+ * Manages review forms for Books, Films, and Shows/Seasons,
+ * data validation, and logic for saving new reviews.
  */
 public class NewReviewViewController {
 
-    // --- Instâncias de Controle ---
+    // --- Control Instances ---
     private WorkManager workManager;
     private Validator bookValidator = new Validator();
     private Validator movieValidator = new Validator();
     private Validator showValidator = new Validator();
 
-    // --- Componentes Comuns e de Troca de Tela ---
+    // --- Common and Screen Switching Components ---
     @FXML private ToggleGroup mediaTypeToggleGroup;
     @FXML private VBox bookFormPane;
     @FXML private VBox movieFormPane;
     @FXML private VBox showFormPane;
 
 
-
-    // --- Componentes do Formulário de LIVRO ---
+    // --- Book Form Components ---
     @FXML private ComboBox <String> bookNamesComboBox;
     @FXML private TextArea reviewBookTextArea;
     @FXML private Slider bookRatingSlider;
     @FXML private Label bookRatingValueLabel;
 
-    // --- Componentes do Formulário de FILME ---
+    // --- Film Form Components ---
     @FXML private ComboBox <String> movieNamesComboBox;
     @FXML private TextArea reviewMovieTextArea;
     @FXML private Slider movieRatingSlider;
     @FXML private Label movieRatingValueLabel;
 
-    // --- Componentes do Formulário de SHOW e TEMPORADA---
+    // --- Show and Season Form Components ---
     @FXML private ComboBox <String> showNamesComboBox;
     @FXML private ComboBox <Integer> seasonNamesComboBox;
     @FXML private TextArea reviewShowTextArea;
@@ -52,18 +53,22 @@ public class NewReviewViewController {
     @FXML private Label showRatingValueLabel;
 
 
-    // Construtor vazio obrigatório para o FXMLLoader
+    // Empty constructor required by FXMLLoader
     public NewReviewViewController() {}
 
+    // Setter for WorkManager - called by MenuController
+    public void setWorkManager(WorkManager workManager) {
+        this.workManager = workManager;
+        // Call setupData() once workManager is set
+        setupData();
+    }
+
     /**
-     * Método executado automaticamente quando o FXML é carregado.
-     * É o ponto de partida para configurar a tela.
+     * Method executed automatically when the FXML is loaded.
+     * It's the starting point for setting up the UI components that don't depend on WorkManager.
      */
     @FXML
     public void initialize() {
-        this.workManager = new WorkManager();
-
-        populateAllComboBoxes();
         setupFormSwitching();
         setupAllValidations();
         setupAllSliderListeners();
@@ -72,11 +77,11 @@ public class NewReviewViewController {
 
         showNamesComboBox.valueProperty().addListener((obs, oldShow, newShow) -> {
             if (newShow != null) {
-                // Se uma nova série for selecionada, popula as temporadas
+                // If a new show is selected, populate seasons
                 populateSeasonComboBox(newShow);
-                seasonNamesComboBox.setDisable(false); // E habilita a ComboBox de temporadas
+                seasonNamesComboBox.setDisable(false); // And enable the Season ComboBox
             } else {
-                // Se nenhuma série for selecionada, limpa e desabilita a ComboBox de temporadas
+                // If no show is selected, clear and disable the Season ComboBox
                 seasonNamesComboBox.getItems().clear();
                 seasonNamesComboBox.setDisable(true);
             }
@@ -84,14 +89,26 @@ public class NewReviewViewController {
     }
 
     /**
-     * Adiciona um listener ao grupo de botões (Book, Movie) para
-     * mostrar/esconder o formulário correto.
+     * New method to set up data-dependent components, called after workManager is injected.
+     */
+    public void setupData() {
+        if (workManager != null) {
+            populateAllComboBoxes();
+        } else {
+            System.err.println("WorkManager is null. Cannot populate combo boxes.");
+            showAlert("Error", "System not initialized correctly. Please restart.");
+        }
+    }
+
+    /**
+     * Adds a listener to the button group (Book, Movie) to
+     * show/hide the correct form.
      */
     private void setupFormSwitching() {
         mediaTypeToggleGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            // Garante que a troca só aconteça se um novo botão for selecionado
+            // Ensures that the switch only happens if a new button is selected
             if (newToggle == null && oldToggle != null) {
-                oldToggle.setSelected(true); // Impede que nenhum botão fique selecionado
+                oldToggle.setSelected(true); // Prevents no button from being selected
                 return;
             }
 
@@ -117,58 +134,75 @@ public class NewReviewViewController {
     }
 
     private void setupAllValidations() {
-        // Validação para Livro
-        bookValidator.createCheck().dependsOn("value", bookNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Selecione um livro."); }).decorates(bookNamesComboBox);
-        bookValidator.createCheck().dependsOn("text", reviewBookTextArea.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("A review não pode ser vazia."); }).decorates(reviewBookTextArea);
-        // Validação para Filme
-        movieValidator.createCheck().dependsOn("value", movieNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Selecione um filme."); }).decorates(movieNamesComboBox);
-        movieValidator.createCheck().dependsOn("text", reviewMovieTextArea.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("A review não pode ser vazia."); }).decorates(reviewMovieTextArea);
-        // Validação para Show/Temporada
-        showValidator.createCheck().dependsOn("value", showNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Selecione uma série."); }).decorates(showNamesComboBox);
-        showValidator.createCheck().dependsOn("value", seasonNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Selecione uma temporada."); }).decorates(seasonNamesComboBox);
-        showValidator.createCheck().dependsOn("text", reviewShowTextArea.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("A review não pode ser vazia."); }).decorates(reviewShowTextArea);
+        // Validation for Book - removed .decorates() calls
+        bookValidator.createCheck().dependsOn("value", bookNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Please select a book."); });
+        bookValidator.createCheck().dependsOn("text", reviewBookTextArea.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("The review cannot be empty."); });
+
+        // Validation for Film - removed .decorates() calls
+        movieValidator.createCheck().dependsOn("value", movieNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Please select a film."); });
+        movieValidator.createCheck().dependsOn("text", reviewMovieTextArea.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("The review cannot be empty."); });
+
+        // Validation for Show/Season - removed .decorates() calls
+        showValidator.createCheck().dependsOn("value", showNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Please select a show."); });
+        showValidator.createCheck().dependsOn("value", seasonNamesComboBox.valueProperty()).withMethod(c -> { if (c.get("value") == null) c.error("Please select a season."); });
+        showValidator.createCheck().dependsOn("text", reviewShowTextArea.textProperty()).withMethod(c -> { if (((String) c.get("text")).trim().isEmpty()) c.error("The review cannot be empty."); });
     }
 
     private void setupAllSliderListeners() {
-        // Listener para o slider de Livro
+        // Listener for Book slider
         bookRatingSlider.valueProperty().addListener((obs, oldVal, newVal) -> bookRatingValueLabel.setText(String.format("%.0f", newVal)));
-        // Listener para o slider de Filme
+        // Listener for Film slider
         movieRatingSlider.valueProperty().addListener((obs, oldVal, newVal) -> movieRatingValueLabel.setText(String.format("%.0f", newVal)));
-        // Listener para o slider de Show
+        // Listener for Show slider
         showRatingSlider.valueProperty().addListener((obs, oldVal, newVal) -> showRatingValueLabel.setText(String.format("%.0f", newVal)));
     }
 
     private void populateAllComboBoxes() {
-        bookNamesComboBox.getItems().setAll(workManager.getBooksName());
-        movieNamesComboBox.getItems().setAll(workManager.getFilmName());
-        showNamesComboBox.getItems().setAll(workManager.getShowName());
+        if (workManager != null) {
+            bookNamesComboBox.getItems().setAll(workManager.getBooksName());
+            movieNamesComboBox.getItems().setAll(workManager.getFilmName());
+            showNamesComboBox.getItems().setAll(workManager.getShowName());
+        } else {
+            System.err.println("WorkManager is null in populateAllComboBoxes. Cannot populate combo boxes.");
+            showAlert("Error", "System not initialized correctly. Please restart.");
+        }
     }
 
     private void populateSeasonComboBox(String showName) {
-        List<Integer> seasonNumbers = workManager.getSeasonsByShowName(showName);
-        seasonNamesComboBox.getItems().setAll(seasonNumbers);
+        if (workManager != null) {
+            List<Integer> seasonNumbers = workManager.getSeasonsByShowName(showName);
+            seasonNamesComboBox.getItems().setAll(seasonNumbers);
+        } else {
+            System.err.println("WorkManager is null in populateSeasonComboBox. Cannot populate seasons.");
+            showAlert("Error", "System not initialized correctly. Please restart.");
+        }
     }
 
     /**
-     * Método único chamado pelo botão "Salvar Mídia".
-     * Ele decide qual validador usar e qual método de salvamento chamar.
+     * Single method called by the "Save Media" button.
+     * It decides which validator to use and which saving method to call.
      */
     @FXML
     void saveReview() {
         ToggleButton selectedButton = (ToggleButton) mediaTypeToggleGroup.getSelectedToggle();
         String selectedType = selectedButton.getText();
         boolean isFormValid = false;
+        Validator currentValidator = null;
 
         switch (selectedType) {
             case "Book":
-                isFormValid = bookValidator.validate();
+                currentValidator = bookValidator;
                 break;
             case "Movie":
-                isFormValid = movieValidator.validate();
+                currentValidator = movieValidator;
                 break;
-            case "Show":
-                isFormValid = showValidator.validate();
+            case "Show/Season":
+                currentValidator = showValidator;
                 break;
+        }
+
+        if (currentValidator != null) {
+            isFormValid = currentValidator.validate();
         }
 
         if (isFormValid) {
@@ -179,75 +213,118 @@ public class NewReviewViewController {
                 case "Movie":
                     saveMovieReview();
                     break;
-                case "Show":
+                case "Show/Season":
                     saveShowReview();
                     break;
             }
         } else {
-            // Se QUALQUER validação falhar, mostra UM ÚNICO alerta genérico
-            showAlert("Erro de Validação", "Por favor, corrija os campos marcados em vermelho.");
+            // Coleta todas as mensagens de erro e exibe em um único alerta
+            String errorMessages = currentValidator.getValidationResult().getMessages().stream()
+                    .map(ValidationMessage::getText)
+                    .collect(Collectors.joining("\n- ", "- ", ""));
+
+            showAlert("Validation Error", "Please correct the following issues:\n" + errorMessages);
         }
     }
 
-    // --- Métodos de Lógica Específicos para Salvar ---
+    // --- Specific Saving Logic Methods ---
 
     private void saveBookReview() {
         try {
-            workManager.createReviewBook(
+            int result = workManager.createReviewBook(
                     bookNamesComboBox.getValue(),
                     reviewBookTextArea.getText(),
-                    (int) bookRatingSlider.getValue(), // CORRIGIDO: usa o slider de livro
+                    (int) bookRatingSlider.getValue(),
                     dateNow()
             );
-            showAlert("Sucesso", "Review para o livro '" + bookNamesComboBox.getValue() + "' salva!");
-            clearAllForms();
+            if (result == 0) {
+                showAlert("Success", "Review for book '" + bookNamesComboBox.getValue() + "' saved successfully!");
+                clearAllForms();
+            } else if (result == 1) {
+                showAlert("Error", "Book not found.");
+            } else if (result == 2) {
+                showAlert("Error", "You haven't read this book yet.");
+            } else {
+                showAlert("Error", "An unexpected error occurred while saving the book review.");
+            }
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar a review do livro.");
+            showAlert("Error", "An error occurred while saving the book review: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private void saveMovieReview() {
         try {
-            workManager.createReviewFilm(
+            int result = workManager.createReviewFilm(
                     movieNamesComboBox.getValue(),
                     reviewMovieTextArea.getText(),
-                    (int) movieRatingSlider.getValue(), // CORRIGIDO: usa o slider de filme
+                    (int) movieRatingSlider.getValue(),
                     dateNow()
             );
-            showAlert("Sucesso", "Review para o filme '" + movieNamesComboBox.getValue() + "' salva!");
-            clearAllForms();
+            if (result == 0) {
+                showAlert("Success", "Review for film '" + movieNamesComboBox.getValue() + "' saved successfully!");
+                clearAllForms();
+            } else if (result == 1) {
+                showAlert("Error", "Film not found.");
+            } else if (result == 2) {
+                showAlert("Error", "You haven't watched this film yet.");
+            } else {
+                showAlert("Error", "An unexpected error occurred while saving the film review.");
+            }
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar a review do filme.");
+            showAlert("Error", "An error occurred while saving the film review: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private void saveShowReview() {
         try {
-            workManager.createReviewShow(
+            int result = workManager.createReviewShow(
                     showNamesComboBox.getValue(),
-                    seasonNamesComboBox.getValue(), // Pega o número da temporada selecionado
+                    seasonNamesComboBox.getValue(),
                     reviewShowTextArea.getText(),
                     (int) showRatingSlider.getValue(),
                     dateNow()
             );
-            showAlert("Sucesso", "Review para a temporada " + seasonNamesComboBox.getValue() + " de '" + showNamesComboBox.getValue() + "' salva!");
-            clearAllForms();
+            if (result == 0) {
+                showAlert("Success", "Review for season " + seasonNamesComboBox.getValue() + " of '" + showNamesComboBox.getValue() + "' saved successfully!");
+                clearAllForms();
+            } else if (result == 1) {
+                showAlert("Error", "Show not found.");
+            } else if (result == 3) {
+                showAlert("Error", "Season not found for this show.");
+            } else {
+                showAlert("Error", "An unexpected error occurred while saving the show review.");
+            }
         } catch (Exception e) {
-            showAlert("Erro", "Ocorreu um erro ao salvar a review da série.");
+            showAlert("Error", "An error occurred while saving the show review: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-
-    // --- Métodos Auxiliares e de Ação para Listas ---
+    // --- Auxiliary and Action Methods for Lists ---
 
     private void clearAllForms() {
-        // Limpa campos de Livro
         reviewBookTextArea.clear();
+        bookNamesComboBox.getSelectionModel().clearSelection();
+        bookRatingSlider.setValue(1);
+
         reviewMovieTextArea.clear();
+        movieNamesComboBox.getSelectionModel().clearSelection();
+        movieRatingSlider.setValue(1);
+
         reviewShowTextArea.clear();
+        showNamesComboBox.getSelectionModel().clearSelection();
+        seasonNamesComboBox.getSelectionModel().clearSelection();
+        seasonNamesComboBox.setDisable(true);
+        showRatingSlider.setValue(1);
     }
- private void showAlert(String title, String message) { Alert alert = new Alert(Alert.AlertType.INFORMATION); alert.setTitle(title); alert.setHeaderText(null); alert.setContentText(message); alert.showAndWait(); }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 }

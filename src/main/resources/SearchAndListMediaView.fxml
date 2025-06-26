@@ -21,7 +21,7 @@
     <children>
         <VBox fx:id="contentArea" alignment="TOP_CENTER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
-                <Label styleClass="form-title" text="Buscar e Listar Mídias" />
+                <Label styleClass="form-title" text="Search and List Media" />
                 <TableView fx:id="mediaTableView" prefHeight="450.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn prefWidth="150.0" text="Title">
@@ -33,7 +33,7 @@
                         <TableColumn prefWidth="80.0" text="Year">
                             <cellValueFactory><PropertyValueFactory property="yearRelease" /></cellValueFactory>
                         </TableColumn>
-                        <TableColumn prefWidth="80.0" text="Assessment">
+                        <TableColumn prefWidth="80.0" text="Rating">
                             <cellValueFactory><PropertyValueFactory property="averageRating" /></cellValueFactory>
                         </TableColumn>
                         <TableColumn prefWidth="200.0" text="Genres">
@@ -67,35 +67,35 @@
                         <Insets bottom="15.0" left="10.0" right="10.0" top="15.0" />
                     </padding>
                     <children>
-                        <Label styleClass="sidebar-title" text="Filtros e Ordenação" />
+                        <Label styleClass="sidebar-title" text="Filters and Sorting" />
                         <Separator prefWidth="200.0" />
-                        <Label styleClass="sidebar-subtitle" text="Buscar por Título/ISBN" />
-                        <TextField fx:id="titleIsbnFilterField" promptText="Título, ISBN (Livro)" />
-                        <Label styleClass="sidebar-subtitle" text="Ano de Lançamento" />
-                        <TextField fx:id="yearFilterField" promptText="Ex: 2023" />
-                        <Label styleClass="sidebar-subtitle" text="Gênero" />
+                        <Label styleClass="sidebar-subtitle" text="Search by Title/ISBN" />
+                        <TextField fx:id="titleIsbnFilterField" promptText="Title, ISBN (Book)" />
+                        <Label styleClass="sidebar-subtitle" text="Release Year" />
+                        <TextField fx:id="yearFilterField" promptText="e.g.: 2023" />
+                        <Label styleClass="sidebar-subtitle" text="Genre" />
                         <CheckComboBox fx:id="genreFilterCheckComboBox" VBox.vgrow="NEVER" />
-                        <Label styleClass="sidebar-subtitle" text="Buscar por Pessoa" />
-                        <TextField fx:id="personFilterField" promptText="Autor, Diretor, Ator/Atriz" />
-                        <Label styleClass="sidebar-subtitle" text="Tipo de Mídia" />
+                        <Label styleClass="sidebar-subtitle" text="Search by Person" />
+                        <TextField fx:id="personFilterField" promptText="Author, Director, Actor/Actress" />
+                        <Label styleClass="sidebar-subtitle" text="Media Type" />
                         <VBox spacing="5.0">
                             <children>
-                                <CheckBox fx:id="filterBookCheckBox" text="Livros" />
-                                <CheckBox fx:id="filterFilmCheckBox" text="Filmes" />
-                                <CheckBox fx:id="filterShowCheckBox" text="Séries" />
+                                <CheckBox fx:id="filterBookCheckBox" text="Books" />
+                                <CheckBox fx:id="filterFilmCheckBox" text="Films" />
+                                <CheckBox fx:id="filterShowCheckBox" text="Shows" />
                             </children>
                         </VBox>
                         <Separator prefWidth="200.0" />
-                        <Label styleClass="sidebar-subtitle" text="Ordenar por" />
+                        <Label styleClass="sidebar-subtitle" text="Sort by" />
                         <VBox spacing="5.0">
                             <children>
-                                <RadioButton fx:id="sortRatingDescRadio" mnemonicParsing="false" text="Avaliação (Maior para Menor)">
+                                <RadioButton fx:id="sortRatingDescRadio" mnemonicParsing="false" text="Rating (High to Low)">
                                     <toggleGroup>
                                         <ToggleGroup fx:id="sortToggleGroup" />
                                     </toggleGroup>
                                 </RadioButton>
-                                <RadioButton fx:id="sortRatingAscRadio" mnemonicParsing="false" text="Avaliação (Menor para Maior)" toggleGroup="$sortToggleGroup" />
-                                <RadioButton fx:id="sortTitleAscRadio" mnemonicParsing="false" text="Título (A-Z)" toggleGroup="$sortToggleGroup" selected="true" />
+                                <RadioButton fx:id="sortRatingAscRadio" mnemonicParsing="false" text="Rating (Low to High)" toggleGroup="$sortToggleGroup" />
+                                <RadioButton fx:id="sortTitleAscRadio" mnemonicParsing="false" text="Title (A-Z)" toggleGroup="$sortToggleGroup" selected="true" />
                             </children>
                         </VBox>
                     </children>
